@@ -27,6 +27,16 @@
   "action": {
     "default_title": "Open SnapSkills"
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Open SnapSkills Side Panel"
+    }
+  },
+  "minimum_chrome_version": "114",
   "side_panel": {
     "default_path": "sidepanel.html"
   },
