@@ -1,0 +1,55 @@
+{
+  "Settings": {
+    "title": "Ajustes",
+    "githubTokenTitle": "GitHub Personal Access Token",
+    "githubTokenDescription": "SnapSkills usa la API de GitHub para buscar skills. Ingresa tu token (clásico, sin scopes extra para repos públicos, o con scope 'repo' para tus repositorios privados).",
+    "githubTokenPlaceholder": "ghp_xxxxxxxxxxxx...",
+    "githubTokenWarning": "⚠️ Sin un token, es posible que el buscador no devuelva resultados debido a los límites de la API de GitHub.",
+    "restoreDefaultToken": "Restaurar key por defecto",
+    "usingDefaultToken": "Usando key por defecto del entorno.",
+    "languageTitle": "Idioma",
+    "languageDescription": "Elige el idioma de la aplicación.",
+    "languageEnglish": "English",
+    "languageSpanish": "Español",
+    "themeTitle": "Tema",
+    "themeDescription": "Elige el tema de la aplicación.",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro"
+  },
+  "Library": {
+    "title": "Biblioteca",
+    "searchPlaceholder": "Buscar skills... (ej., {keywords})",
+    "noSkillsFound": "No se encontraron skills.",
+    "searchPrompt": "Busca una skill.",
+    "subtitle": "Skills de IA instantáneas para cada flujo de trabajo"
+  },
+  "Saved": {
+    "title": "Guardados",
+    "noSavedSkills": "No hay skills guardadas."
+  },
+  "History": {
+    "title": "Historial",
+    "noHistory": "No hay historial de búsqueda.",
+    "clearHistory": "Borrar historial"
+  },
+  "Created": {
+    "title": "Creados",
+    "noCreatedSkills": "Aún no has creado ninguna skill."
+  },
+  "Editor": {
+    "titlePlaceholder": "Título de la skill...",
+    "preview": "Vista previa",
+    "edit": "Editar",
+    "untitled": "Skill sin título",
+    "newSkill": "Nueva Skill"
+  },
+  "Common": {
+    "save": "Guardar",
+    "remove": "Quitar",
+    "copyContent": "Copiar contenido",
+    "downloadMD": "Descargar MD",
+    "viewInGitHub": "Ver en GitHub",
+    "noMarkdownContent": "No se encontró contenido markdown.",
+    "failedToLoad": "Error al cargar el contenido."
+  }
+}

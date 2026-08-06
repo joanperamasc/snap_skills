@@ -1,0 +1,55 @@
+{
+  "Settings": {
+    "title": "Settings",
+    "githubTokenTitle": "GitHub Personal Access Token",
+    "githubTokenDescription": "SnapSkills uses the GitHub API to search for skills. Enter your token (classic, without extra scopes for public repos, or with 'repo' scope for your private repositories).",
+    "githubTokenPlaceholder": "ghp_xxxxxxxxxxxx...",
+    "githubTokenWarning": "⚠️ Without a token, the search engine might not return results due to GitHub API limits.",
+    "restoreDefaultToken": "Restore default key",
+    "usingDefaultToken": "Using default key from environment.",
+    "languageTitle": "Language",
+    "languageDescription": "Choose the application language.",
+    "languageEnglish": "English",
+    "languageSpanish": "Español",
+    "themeTitle": "Theme",
+    "themeDescription": "Choose the application theme.",
+    "themeLight": "Light",
+    "themeDark": "Dark"
+  },
+  "Library": {
+    "title": "Library",
+    "searchPlaceholder": "Search skills... (e.g., {keywords})",
+    "noSkillsFound": "No skills found.",
+    "searchPrompt": "Search for a skill.",
+    "subtitle": "Instant AI skills for every workflow"
+  },
+  "Saved": {
+    "title": "Saved",
+    "noSavedSkills": "No saved skills."
+  },
+  "History": {
+    "title": "History",
+    "noHistory": "No search history.",
+    "clearHistory": "Clear History"
+  },
+  "Created": {
+    "title": "Created",
+    "noCreatedSkills": "You haven't created any skills yet."
+  },
+  "Editor": {
+    "titlePlaceholder": "Skill title...",
+    "preview": "Preview",
+    "edit": "Edit",
+    "untitled": "Untitled Skill",
+    "newSkill": "New Skill"
+  },
+  "Common": {
+    "save": "Save",
+    "remove": "Remove",
+    "copyContent": "Copy content",
+    "downloadMD": "Download MD",
+    "viewInGitHub": "View on GitHub",
+    "noMarkdownContent": "No markdown content found.",
+    "failedToLoad": "Failed to load content."
+  }
+}
