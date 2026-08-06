@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Instant AI skills for every workflow",
   "author": "Joan Peramas <info@peramas.com>",
+  "homepage_url": "https://github.com/joanperamasc/snap_skills",
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",
