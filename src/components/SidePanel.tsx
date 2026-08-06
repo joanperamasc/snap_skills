@@ -679,6 +679,11 @@ export default function SidePanel() {
                 </button>
               </div>
             </div>
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-4 mt-6 text-center">
+              <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                Created with ❤️ by <a href="mailto:info@peramas.com" className="text-neutral-700 dark:text-neutral-300 hover:underline">Joan Peramas</a>
+              </p>
+            </div>
           </div>
         </div>
       )}
