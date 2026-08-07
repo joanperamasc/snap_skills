@@ -75,10 +75,13 @@ export default function SidePanel() {
   const defaultToken = import.meta.env.VITE_GITHUB_TOKEN || '';
   const [githubToken, setGithubToken] = useState('');
   const activeToken = githubToken || defaultToken;
+  
+  const [currentTheme, setCurrentTheme] = useState('light');
+  const [currentLanguage, setCurrentLanguage] = useState('en');
 
   // Load saved skills on mount
   useEffect(() => {
-    chrome.storage.local.get(['savedSkills', 'githubToken', 'searchHistory', 'createdSkills'], (result) => {
+    chrome.storage.local.get(['savedSkills', 'githubToken', 'searchHistory', 'createdSkills', 'theme', 'language'], (result) => {
       if (Array.isArray(result.savedSkills)) setSavedSkills(result.savedSkills as Skill[]);
       if (Array.isArray(result.searchHistory)) setSearchHistory(result.searchHistory as string[]);
       if (Array.isArray(result.createdSkills)) setCreatedSkills(result.createdSkills as Skill[]);
@@ -86,6 +89,8 @@ export default function SidePanel() {
       if (typeof result.githubToken === 'string' && result.githubToken) {
         setGithubToken(result.githubToken);
       }
+      if (typeof result.theme === 'string') setCurrentTheme(result.theme);
+      if (typeof result.language === 'string') setCurrentLanguage(result.language);
     });
   }, []);
 
@@ -768,14 +773,20 @@ export default function SidePanel() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => chrome.storage.local.set({ language: 'en' })}
-                  className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    chrome.storage.local.set({ language: 'en' });
+                    setCurrentLanguage('en');
+                  }}
+                  className={`px-3 py-1.5 border rounded text-xs transition-colors ${currentLanguage === 'en' ? 'bg-neutral-900 text-white dark:bg-white dark:text-black border-transparent' : 'bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'}`}
                 >
                   {tSettings('languageEnglish')}
                 </button>
                 <button
-                  onClick={() => chrome.storage.local.set({ language: 'es' })}
-                  className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    chrome.storage.local.set({ language: 'es' });
+                    setCurrentLanguage('es');
+                  }}
+                  className={`px-3 py-1.5 border rounded text-xs transition-colors ${currentLanguage === 'es' ? 'bg-neutral-900 text-white dark:bg-white dark:text-black border-transparent' : 'bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'}`}
                 >
                   {tSettings('languageSpanish')}
                 </button>
@@ -789,14 +800,20 @@ export default function SidePanel() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => chrome.storage.local.set({ theme: 'light' })}
-                  className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    chrome.storage.local.set({ theme: 'light' });
+                    setCurrentTheme('light');
+                  }}
+                  className={`px-3 py-1.5 border rounded text-xs transition-colors ${currentTheme === 'light' ? 'bg-neutral-900 text-white dark:bg-white dark:text-black border-transparent' : 'bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'}`}
                 >
                   {tSettings('themeLight')}
                 </button>
                 <button
-                  onClick={() => chrome.storage.local.set({ theme: 'dark' })}
-                  className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    chrome.storage.local.set({ theme: 'dark' });
+                    setCurrentTheme('dark');
+                  }}
+                  className={`px-3 py-1.5 border rounded text-xs transition-colors ${currentTheme === 'dark' ? 'bg-neutral-900 text-white dark:bg-white dark:text-black border-transparent' : 'bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'}`}
                 >
                   {tSettings('themeDark')}
                 </button>
