@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 
-type EmptyStateType = 'idle' | 'not-found' | 'empty-saved' | 'empty-created';
+type EmptyStateType = 'idle' | 'not-found' | 'empty-saved' | 'empty-created' | 'rate-limit';
 
 interface EmptyStateProps {
   type: EmptyStateType;
   message: string;
+  submessage?: string;
 }
 
-export function EmptyState({ type, message }: EmptyStateProps) {
+export function EmptyState({ type, message, submessage }: EmptyStateProps) {
   const [frame, setFrame] = useState(0);
   
   // Animation frames for different states
   const typingFrames = ['(^-^) 旦', '(^o^) 旦', '(>_<) 旦', '(-_-) 旦'];
   const notFoundArt = '¯\\_(ツ)_/¯';
   const emptyFolderArt = '[\\_/]';
+  const rateLimitArt = '(╯°□°)╯︵ ┻━┻';
 
   useEffect(() => {
     // Only animate if idle (typing cat)
@@ -38,6 +40,9 @@ export function EmptyState({ type, message }: EmptyStateProps) {
     case 'empty-created':
       asciiArt = emptyFolderArt;
       break;
+    case 'rate-limit':
+      asciiArt = rateLimitArt;
+      break;
   }
 
   return (
@@ -48,6 +53,11 @@ export function EmptyState({ type, message }: EmptyStateProps) {
       <div className="text-xs font-medium text-center px-6 leading-relaxed">
         {message}
       </div>
+      {submessage && (
+        <div className="text-[11px] text-center px-4 leading-relaxed mt-1 opacity-80">
+          {submessage}
+        </div>
+      )}
     </div>
   );
 }

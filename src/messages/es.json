@@ -21,7 +21,10 @@
     "searchPlaceholder": "Buscar skills... (ej., {keywords})",
     "noSkillsFound": "No se encontraron skills.",
     "searchPrompt": "Busca una skill.",
-    "subtitle": "Skills de IA instantáneas para cada flujo de trabajo"
+    "subtitle": "Skills de IA instantáneas para cada flujo de trabajo",
+    "rateLimitTitle": "Límite de búsquedas alcanzado.",
+    "rateLimitDesc": "Añade tu Token de GitHub para seguir buscando sin límites.",
+    "goToSettings": "Ir a Ajustes"
   },
   "AdvancedSearch": {
     "user": "Usuario",

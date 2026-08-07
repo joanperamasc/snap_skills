@@ -225,9 +225,9 @@ export default function SidePanel() {
           }
         } else {
           if (response?.error?.includes('RATE_LIMIT_EXCEEDED')) {
-            setSearchError("Límite de peticiones de GitHub superado. Por favor, configura tu Token en Ajustes.");
+            setSearchError("RATE_LIMIT");
           } else {
-            setSearchError("Error al buscar: " + response?.error);
+            setSearchError(response?.error || "Unknown error");
           }
           setHasMore(false);
           console.error('Search failed:', response?.error);
@@ -945,7 +945,23 @@ export default function SidePanel() {
               );
             })}
             
-            {activeTab === 'library' && searchError && (
+            {activeTab === 'library' && searchError && searchError === 'RATE_LIMIT' && (
+              <div className="py-12 flex flex-col items-center justify-center text-center px-6">
+                <EmptyState 
+                  type="rate-limit"
+                  message={tLibrary('rateLimitTitle')} 
+                  submessage={tLibrary('rateLimitDesc')} 
+                />
+                <button 
+                  onClick={() => setActiveTab('settings')}
+                  className="mt-6 px-4 py-2 bg-neutral-900 text-white dark:bg-white dark:text-black rounded text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  {tLibrary('goToSettings')}
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'library' && searchError && searchError !== 'RATE_LIMIT' && (
               <div className="py-4 text-center">
                 <p className="text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">{searchError}</p>
               </div>
@@ -956,7 +972,7 @@ export default function SidePanel() {
                 <button 
                   onClick={() => setPage(p => p + 1)}
                   disabled={loading}
-                  className="px-4 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="px-4 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 hover:text-white dark:text-white bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
                 >
                   {loading && page > 1 && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Cargar Más
