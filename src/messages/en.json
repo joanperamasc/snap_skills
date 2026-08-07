@@ -60,6 +60,7 @@
     "downloadMD": "Download MD",
     "viewInGitHub": "View on GitHub",
     "noMarkdownContent": "No markdown content found.",
-    "failedToLoad": "Failed to load content."
+    "failedToLoad": "Failed to load content.",
+    "createdBy": "Created with ❤️ by"
   }
 }

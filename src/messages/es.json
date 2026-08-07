@@ -60,6 +60,7 @@
     "downloadMD": "Descargar MD",
     "viewInGitHub": "Ver en GitHub",
     "noMarkdownContent": "No se encontró contenido markdown.",
-    "failedToLoad": "Error al cargar el contenido."
+    "failedToLoad": "Error al cargar el contenido.",
+    "createdBy": "Creado con ❤️ por"
   }
 }
