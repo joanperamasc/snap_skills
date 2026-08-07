@@ -23,6 +23,16 @@
     "searchPrompt": "Busca una skill.",
     "subtitle": "Skills de IA instantáneas para cada flujo de trabajo"
   },
+  "AdvancedSearch": {
+    "user": "Usuario",
+    "userTooltip": "Filtra resultados creados solo por este usuario u organización de GitHub",
+    "repo": "Repo",
+    "repoTooltip": "Limita la búsqueda a un repositorio específico en el formato usuario/repo",
+    "path": "Ruta (Path)",
+    "pathTooltip": "Exige que el archivo esté dentro de una carpeta concreta (ej. skills/)",
+    "strict": "Filtro estricto (Calidad)",
+    "strictTooltip": "Si está activo, solo muestra archivos que contengan la palabra 'snapskill' y pesen más de 200 bytes. Al apagarlo, busca cualquier SKILL.md en GitHub."
+  },
   "Saved": {
     "title": "Guardados",
     "noSavedSkills": "No hay skills guardadas."

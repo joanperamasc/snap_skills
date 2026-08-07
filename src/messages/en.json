@@ -23,6 +23,16 @@
     "searchPrompt": "Search for a skill.",
     "subtitle": "Instant AI skills for every workflow"
   },
+  "AdvancedSearch": {
+    "user": "User",
+    "userTooltip": "Filter results created only by this GitHub user or organization",
+    "repo": "Repo",
+    "repoTooltip": "Limit the search to a specific repository in the format user/repo",
+    "path": "Path",
+    "pathTooltip": "Require the file to be within a specific folder (e.g. skills/)",
+    "strict": "Strict filter (Quality)",
+    "strictTooltip": "If active, only shows files containing the word 'snapskill' and larger than 200 bytes. If disabled, searches any SKILL.md on GitHub."
+  },
   "Saved": {
     "title": "Saved",
     "noSavedSkills": "No saved skills."

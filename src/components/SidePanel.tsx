@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Zap, Search, Terminal, Database, Bookmark, Loader2, Settings, ArrowLeft, Copy, Check, Download, ExternalLink, History, Plus, PenTool, Bold, Italic, Code, List, Eye, Edit2, X } from 'lucide-react';
+import { Zap, Search, Terminal, Database, Bookmark, Loader2, Settings, ArrowLeft, Copy, Check, Download, ExternalLink, History, Plus, PenTool, Bold, Italic, Code, List, Eye, Edit2, X, SlidersHorizontal, Info } from 'lucide-react';
 import { useDebounce } from '../hooks/useDebounce';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { EmptyState } from './EmptyState';
 
 type Skill = {
   id: string;
@@ -39,11 +40,18 @@ export default function SidePanel() {
   const tCreated = useTranslations('Created');
   const tEditor = useTranslations('Editor');
   const tCommon = useTranslations('Common');
+  const tAdvanced = useTranslations('AdvancedSearch');
 
   const [activeTab, setActiveTab] = useState<'library' | 'saved' | 'history' | 'created' | 'settings'>('library');
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 500);
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({ user: '', repo: '', path: '', strict: false });
+  const debouncedAdvancedFilters = useDebounce(advancedFilters, 500);
   const [savedSkills, setSavedSkills] = useState<Skill[]>([]);
   const [createdSkills, setCreatedSkills] = useState<Skill[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -168,31 +176,55 @@ export default function SidePanel() {
     };
   }, [activeTab]);
 
+  // Reset page when query or filters change
+  useEffect(() => {
+    setPage(1);
+    setSearchError(null);
+  }, [debouncedQuery, debouncedAdvancedFilters]);
+
   // Search logic
   useEffect(() => {
     if (activeTab !== 'library') return;
 
     const fetchSkills = () => {
       setLoading(true);
-      // If query is empty, maybe fetch some defaults or just clear
-      if (debouncedQuery.trim() === '') {
+      // If query is empty and we don't have filters, maybe fetch some defaults or just clear
+      if (debouncedQuery.trim() === '' && !debouncedAdvancedFilters.user && !debouncedAdvancedFilters.repo) {
         // Fallback hardcoded for empty state if desired, or empty array
         setSkills([]);
+        setHasMore(false);
+        setSearchError(null);
         setLoading(false);
         return;
       }
 
-      chrome.runtime.sendMessage({ action: 'SEARCH_SKILLS', query: debouncedQuery, token: activeToken }, (response) => {
+      chrome.runtime.sendMessage({ action: 'SEARCH_SKILLS', query: debouncedQuery, token: activeToken, page, filters: debouncedAdvancedFilters }, (response) => {
         if (response && response.success) {
+          setSearchError(null);
           // Data is already mapped by the service worker
-          setSkills(response.data);
-          // Add to history
-          setSearchHistory(prev => {
-            const newHistory = [debouncedQuery, ...prev.filter(q => q !== debouncedQuery)].slice(0, 20);
-            chrome.storage.local.set({ searchHistory: newHistory });
-            return newHistory;
-          });
+          if (page === 1) {
+            setSkills(response.data);
+          } else {
+            setSkills(prev => [...prev, ...response.data]);
+          }
+          
+          setHasMore(response.data.length > 0 && response.total_count > (page * 30));
+
+          // Add to history only on first page
+          if (page === 1) {
+            setSearchHistory(prev => {
+              const newHistory = [debouncedQuery, ...prev.filter(q => q !== debouncedQuery)].slice(0, 20);
+              chrome.storage.local.set({ searchHistory: newHistory });
+              return newHistory;
+            });
+          }
         } else {
+          if (response?.error?.includes('RATE_LIMIT_EXCEEDED')) {
+            setSearchError("Límite de peticiones de GitHub superado. Por favor, configura tu Token en Ajustes.");
+          } else {
+            setSearchError("Error al buscar: " + response?.error);
+          }
+          setHasMore(false);
           console.error('Search failed:', response?.error);
         }
         setLoading(false);
@@ -200,7 +232,7 @@ export default function SidePanel() {
     };
 
     fetchSkills();
-  }, [debouncedQuery, activeTab, activeToken]);
+  }, [debouncedQuery, page, activeTab, activeToken, debouncedAdvancedFilters]);
 
   
   const debouncedEditTitle = useDebounce(editTitle, 1000);
@@ -572,24 +604,115 @@ export default function SidePanel() {
 
         {activeTab === 'library' && (
           <div className="px-4 pb-4">
-            <div className="relative flex items-center">
-              <Search className="absolute left-3 w-4 h-4 text-neutral-500" strokeWidth={2} />
-              <input 
-                type="text" 
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={tLibrary('searchPlaceholder', { keywords: searchKeywords })} 
-                className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-lg py-2 pl-9 pr-8 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery('')}
-                  className="absolute right-2 p-1 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer flex items-center justify-center"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1 flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-neutral-500" strokeWidth={2} />
+                <input 
+                  type="text" 
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={tLibrary('searchPlaceholder', { keywords: searchKeywords })} 
+                  className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-lg py-2 pl-9 pr-8 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery('')}
+                    className="absolute right-2 p-1 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer flex items-center justify-center"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className={`flex-none p-2 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${showAdvancedSearch ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-transparent' : 'bg-white dark:bg-black border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
             </div>
+            
+            {showAdvancedSearch && (
+              <div className="mt-3 p-3 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="relative group inline-flex items-center gap-1 mb-1">
+                      <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">{tAdvanced('user')}</label>
+                      <Info className="w-3 h-3 text-neutral-400 cursor-help" />
+                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block w-48 p-2 bg-neutral-900 dark:bg-white text-white dark:text-black text-[10px] leading-tight rounded shadow-lg z-50">
+                        {tAdvanced('userTooltip')}
+                        <div className="absolute top-full left-4 -ml-1 border-4 border-transparent border-t-neutral-900 dark:border-t-white"></div>
+                      </div>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={advancedFilters.user}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, user: e.target.value}))}
+                      placeholder="ej. anthropics"
+                      className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded py-1 px-2 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-neutral-400"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="relative group inline-flex items-center gap-1 mb-1">
+                      <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">{tAdvanced('repo')}</label>
+                      <Info className="w-3 h-3 text-neutral-400 cursor-help" />
+                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block w-48 p-2 bg-neutral-900 dark:bg-white text-white dark:text-black text-[10px] leading-tight rounded shadow-lg z-50">
+                        {tAdvanced('repoTooltip')}
+                        <div className="absolute top-full left-4 -ml-1 border-4 border-transparent border-t-neutral-900 dark:border-t-white"></div>
+                      </div>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={advancedFilters.repo}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, repo: e.target.value}))}
+                      placeholder="ej. anthropics/claude-code"
+                      className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded py-1 px-2 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-neutral-400"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="relative group inline-flex items-center gap-1 mb-1">
+                      <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">{tAdvanced('path')}</label>
+                      <Info className="w-3 h-3 text-neutral-400 cursor-help" />
+                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block w-48 p-2 bg-neutral-900 dark:bg-white text-white dark:text-black text-[10px] leading-tight rounded shadow-lg z-50">
+                        {tAdvanced('pathTooltip')}
+                        <div className="absolute top-full left-4 -ml-1 border-4 border-transparent border-t-neutral-900 dark:border-t-white"></div>
+                      </div>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={advancedFilters.path}
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, path: e.target.value}))}
+                      placeholder="ej. skills/"
+                      className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded py-1 px-2 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-neutral-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 pt-2 mt-1">
+                  <div className="relative group inline-flex items-center gap-1.5">
+                    <span className="text-xs text-neutral-700 dark:text-neutral-300 font-medium">
+                      {tAdvanced('strict')}
+                    </span>
+                    <Info className="w-3.5 h-3.5 text-neutral-400 cursor-help" />
+                    <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block w-48 p-2 bg-neutral-900 dark:bg-white text-white dark:text-black text-[10px] leading-tight rounded shadow-lg z-50">
+                      {tAdvanced('strictTooltip')}
+                      <div className="absolute top-full left-4 -ml-1 border-4 border-transparent border-t-neutral-900 dark:border-t-white"></div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={advancedFilters.strict} 
+                      onChange={(e) => setAdvancedFilters(prev => ({...prev, strict: e.target.checked}))} 
+                      className="sr-only peer" 
+                    />
+                    <div className="w-7 h-4 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-neutral-600 peer-checked:bg-neutral-900 dark:peer-checked:bg-white"></div>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -730,14 +853,15 @@ export default function SidePanel() {
       {/* SKILLS LIST */}
       {(activeTab === 'library' || activeTab === 'saved' || activeTab === 'created') && (
       <div className="flex-1 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-neutral-200 dark:bg-neutral [&::-webkit-scrollbar-track]:bg-transparent">
-        {loading ? (
+        {loading && page === 1 ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
           </div>
         ) : displayedSkills.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-neutral-500 text-sm">
-            {activeTab === 'library' ? (query ? tLibrary('noSkillsFound') : tLibrary('searchPrompt')) : activeTab === 'created' ? tCreated('noCreatedSkills') : tSaved('noSavedSkills')}
-          </div>
+          <EmptyState 
+            type={activeTab === 'library' && debouncedQuery ? 'not-found' : activeTab === 'library' ? 'idle' : activeTab === 'created' ? 'empty-created' : 'empty-saved'} 
+            message={activeTab === 'library' ? (debouncedQuery ? tLibrary('noSkillsFound') : tLibrary('searchPrompt')) : activeTab === 'created' ? tCreated('noCreatedSkills') : tSaved('noSavedSkills')} 
+          />
         ) : (
           <div className="flex flex-col">
             {displayedSkills.map((skill) => {
@@ -799,6 +923,25 @@ export default function SidePanel() {
                 </div>
               );
             })}
+            
+            {activeTab === 'library' && searchError && (
+              <div className="py-4 text-center">
+                <p className="text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">{searchError}</p>
+              </div>
+            )}
+            
+            {activeTab === 'library' && hasMore && !searchError && (
+              <div className="py-4 flex justify-center border-t border-neutral-100 dark:border-neutral-800/50">
+                <button 
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={loading}
+                  className="px-4 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  {loading && page > 1 && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Cargar Más
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
