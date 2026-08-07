@@ -1,7 +1,7 @@
 {
   "name": "snapskills",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.1.0",
+  "description": "Chrome extension to supercharge Chat with SnapSkills",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

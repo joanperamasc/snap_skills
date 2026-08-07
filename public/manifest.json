@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SnapSkills",
-  "version": "1.0.0",
-  "description": "Instant AI skills for every workflow",
+  "version": "1.1.0",
+  "description": "SnapSkills library for instant AI workflows",
   "author": "Joan Peramas <info@peramas.com>",
   "homepage_url": "https://github.com/joanperamasc/snap_skills",
   "icons": {
