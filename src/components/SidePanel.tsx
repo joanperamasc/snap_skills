@@ -71,10 +71,17 @@ export default function SidePanel() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchKeywords, setSearchKeywords] = useState('design, react, video');
   
-  // Usar la variable de entorno como valor por defecto si existe
-  const defaultToken = import.meta.env.VITE_GITHUB_TOKEN || '';
+  // Usar las variables de entorno (separadas por coma) para rotación
+  const defaultTokensStr = import.meta.env.VITE_GITHUB_TOKEN || '';
+  const defaultTokens = defaultTokensStr.split(',').map((t: string) => t.trim()).filter(Boolean);
   const [githubToken, setGithubToken] = useState('');
-  const activeToken = githubToken || defaultToken;
+  
+  const getActiveToken = () => {
+    if (githubToken) return githubToken;
+    if (defaultTokens.length === 0) return '';
+    const randomIndex = Math.floor(Math.random() * defaultTokens.length);
+    return defaultTokens[randomIndex];
+  };
   
   const [currentTheme, setCurrentTheme] = useState('light');
   const [currentLanguage, setCurrentLanguage] = useState('en');
@@ -203,7 +210,7 @@ export default function SidePanel() {
         return;
       }
 
-      chrome.runtime.sendMessage({ action: 'SEARCH_SKILLS', query: debouncedQuery, token: activeToken, page, filters: debouncedAdvancedFilters }, (response) => {
+      chrome.runtime.sendMessage({ action: 'SEARCH_SKILLS', query: debouncedQuery, token: getActiveToken(), page, filters: debouncedAdvancedFilters }, (response) => {
         if (response && response.success) {
           setSearchError(null);
           // Data is already mapped by the service worker
@@ -237,7 +244,7 @@ export default function SidePanel() {
     };
 
     fetchSkills();
-  }, [debouncedQuery, page, activeTab, activeToken, debouncedAdvancedFilters]);
+  }, [debouncedQuery, page, activeTab, githubToken, debouncedAdvancedFilters]);
 
   
   const debouncedEditTitle = useDebounce(editTitle, 1000);
@@ -323,7 +330,7 @@ export default function SidePanel() {
       setActionLoading(null);
       return;
     }
-    chrome.runtime.sendMessage({ action: 'GET_SKILL_DETAILS', source: skill.source, path: skill.path, token: activeToken }, (response) => {
+    chrome.runtime.sendMessage({ action: 'GET_SKILL_DETAILS', source: skill.source, path: skill.path, token: getActiveToken() }, (response) => {
       if (response && response.success && response.data.files) {
         const mdFile = response.data.files.find((f: any) => f.path === skill.path || f.path.endsWith('.md'));
         const content = mdFile ? mdFile.contents : '# ' + skill.name + '\n' + tCommon('noMarkdownContent');
@@ -364,7 +371,7 @@ export default function SidePanel() {
     }
     setMarkdownLoading(true);
     setSkillMarkdown(null);
-    chrome.runtime.sendMessage({ action: 'GET_SKILL_DETAILS', source: skill.source, path: skill.path, token: activeToken }, (response) => {
+    chrome.runtime.sendMessage({ action: 'GET_SKILL_DETAILS', source: skill.source, path: skill.path, token: getActiveToken() }, (response) => {
       if (response && response.success && response.data.files) {
         const mdFile = response.data.files.find((f: any) => f.path === skill.path || f.path.endsWith('.md'));
         const content = mdFile ? mdFile.contents : `# ${skill.name}\n${tCommon('noMarkdownContent')}`;
@@ -755,12 +762,12 @@ export default function SidePanel() {
                 )}
               </div>
             </div>
-            {!githubToken && !defaultToken && (
+            {!githubToken && defaultTokens.length === 0 && (
               <div className="p-3 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded text-xs text-neutral-600 dark:text-neutral-400">
                 {tSettings('githubTokenWarning')}
               </div>
             )}
-            {!githubToken && defaultToken && (
+            {!githubToken && defaultTokens.length > 0 && (
               <div className="p-3 bg-primary/10 dark:bg-primary-dark/20 border border-primary/20 dark:border-primary-dark/30 rounded text-xs text-primary-dark dark:text-primary">
                 {tSettings('usingDefaultToken')}
               </div>
