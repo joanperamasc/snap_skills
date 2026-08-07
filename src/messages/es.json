@@ -54,7 +54,10 @@
     "preview": "Vista previa",
     "edit": "Editar",
     "untitled": "Skill sin título",
-    "newSkill": "Nueva Skill"
+    "newSkill": "Nueva Skill",
+    "improveWithAI": "Mejorar con IA",
+    "undo": "Deshacer",
+    "redo": "Rehacer"
   },
   "Common": {
     "save": "Guardar",

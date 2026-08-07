@@ -2,6 +2,11 @@
 @plugin "@tailwindcss/typography";
 @variant dark (&:where(.dark, .dark *));
 
+body {
+  @apply bg-neutral-100 dark:bg-neutral-900;
+  /* El color de fondo del body será distinto al bg-white/bg-black de la app para que se distinga el contenedor centrado de 896px si la pantalla es más grande */
+}
+
 @theme {
   --font-sans: "Inter", "Geist Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2026-08-07
 ### Added
+- **Chrome Built-in AI Integration**: Added an experimental "Improve with AI" (Wand2) button in the Markdown editor. Uses `window.ai.languageModel` (Gemini Nano) to automatically enhance skill descriptions entirely on-device.
+- **Robust Undo/Redo System**: The editor now features an advanced local history stack that seamlessly tracks manual typing (debounced) and AI replacements, allowing users to safely undo/redo changes.
 - **Advanced Search**: New dropdown filter panel to narrow searches by user, repository, and specific path.
 - **Ludic Empty State**: Added a "Hacker Cat" ASCII animation for empty loading states and zero-result searches.
 - **Smart Caching**: Implemented a 15-minute cache (using `chrome.storage.session`) to prevent redundant API calls and protect rate limits.

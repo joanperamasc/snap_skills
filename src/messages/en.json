@@ -54,7 +54,10 @@
     "preview": "Preview",
     "edit": "Edit",
     "untitled": "Untitled Skill",
-    "newSkill": "New Skill"
+    "newSkill": "New Skill",
+    "improveWithAI": "Improve with AI",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "Common": {
     "save": "Save",

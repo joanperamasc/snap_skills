@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Zap, Search, Terminal, Database, Bookmark, Loader2, Settings, ArrowLeft, Copy, Check, Download, ExternalLink, History, Plus, PenTool, Bold, Italic, Code, List, Eye, Edit2, X, SlidersHorizontal, Info } from 'lucide-react';
+import { Zap, Search, Terminal, Database, Bookmark, Loader2, Settings, ArrowLeft, Copy, Check, Download, ExternalLink, History, Plus, PenTool, Bold, Italic, Code, List, Eye, Edit2, X, SlidersHorizontal, Info, Wand2, Undo, Redo } from 'lucide-react';
 import { useDebounce } from '../hooks/useDebounce';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -85,6 +85,12 @@ export default function SidePanel() {
   
   const [currentTheme, setCurrentTheme] = useState('light');
   const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  // AI & History States
+  const [isAIAvailable, setIsAIAvailable] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
+  const [contentHistory, setContentHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Load saved skills on mount
   useEffect(() => {
@@ -271,10 +277,122 @@ export default function SidePanel() {
     }
   }, [debouncedEditTitle, debouncedEditContent]);
 
+  // Helper for different Chrome AI API versions
+  const getAIProvider = () => {
+    // @ts-ignore
+    if (typeof window.ai === 'undefined') return null;
+    // @ts-ignore
+    if (window.ai.languageModel) return window.ai.languageModel;
+    // @ts-ignore
+    if (window.ai.assistant) return window.ai.assistant;
+    // @ts-ignore
+    if (typeof window.ai.createTextSession === 'function') {
+      return { 
+        // @ts-ignore
+        create: () => window.ai.createTextSession(),
+        // @ts-ignore
+        capabilities: () => window.ai.canCreateTextSession ? window.ai.canCreateTextSession() : 'readily'
+      };
+    }
+    return null;
+  };
+
+  // Initialize AI Availability
+  useEffect(() => {
+    const checkAI = async () => {
+      // @ts-ignore
+      console.log('Checking window.ai:', window.ai);
+      const provider = getAIProvider();
+      if (provider) {
+        setIsAIAvailable(true);
+      } else {
+        setIsAIAvailable(false);
+      }
+    };
+    // In extensions, sometimes the API injection has a slight delay
+    setTimeout(checkAI, 500);
+  }, []);
+
+  // Track manual typing with a debounce
+  useEffect(() => {
+    if (!isCreating || !debouncedEditContent) return;
+    if (debouncedEditContent !== editContent) return;
+    
+    // Only push if the debounced content differs from the current history state
+    if (contentHistory[historyIndex] !== debouncedEditContent) {
+      const newHistory = contentHistory.slice(0, historyIndex + 1);
+      newHistory.push(debouncedEditContent);
+      setContentHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [debouncedEditContent, editContent, isCreating, contentHistory, historyIndex]);
+
+  const updateContent = (newContent: string) => {
+    let currentHist = contentHistory.slice(0, historyIndex + 1);
+    
+    // Commit any pending manual edits before adding the new content
+    if (editContent !== currentHist[currentHist.length - 1]) {
+      currentHist.push(editContent);
+    }
+    
+    currentHist.push(newContent);
+    setEditContent(newContent);
+    setContentHistory(currentHist);
+    setHistoryIndex(currentHist.length - 1);
+  };
+
+  const handleUndo = () => {
+    let currentHist = [...contentHistory];
+    let currIdx = historyIndex;
+
+    // Commit any pending manual edits so they aren't lost and can be redone
+    if (editContent !== currentHist[currIdx]) {
+      currentHist = currentHist.slice(0, currIdx + 1);
+      currentHist.push(editContent);
+      setContentHistory(currentHist);
+      currIdx = currentHist.length - 1;
+    }
+
+    if (currIdx > 0) {
+      const prevIndex = currIdx - 1;
+      setHistoryIndex(prevIndex);
+      setEditContent(currentHist[prevIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < contentHistory.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      setEditContent(contentHistory[nextIndex]);
+    }
+  };
+
+  const handleImproveSkill = async () => {
+    const aiProvider = getAIProvider();
+    if (!aiProvider) return;
+    
+    setIsImproving(true);
+    try {
+      const session = await aiProvider.create();
+      const promptText = `Actúa como un experto en redacción. Mejora este documento para una habilidad llamada '${editTitle}'. Mantén el formato Markdown, mejora la redacción, estructura y da más claridad al contenido. Este es el contenido original:\n\n${editContent}`;
+      const response = await session.prompt(promptText);
+      updateContent(response);
+      if (typeof session.destroy === 'function') session.destroy();
+    } catch (error) {
+      console.error("Error improving skill with AI:", error);
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
   const handleCreateNew = () => {
     setEditId(crypto.randomUUID());
     setEditTitle('');
-    setEditContent('# ' + tEditor('newSkill') + '\n\n');
+    const initialContent = '# ' + tEditor('newSkill') + '\n\n';
+    setEditContent(initialContent);
+    setContentHistory([initialContent]);
+    setHistoryIndex(0);
     setIsCreating(true);
     setEditPreview(false);
   };
@@ -288,7 +406,7 @@ export default function SidePanel() {
     const selected = text.substring(start, end);
     const after = text.substring(end);
     
-    setEditContent(before + prefix + selected + suffix + after);
+    updateContent(before + prefix + selected + suffix + after);
     
     setTimeout(() => {
       if (textareaRef.current) {
@@ -364,7 +482,10 @@ export default function SidePanel() {
     if (skill.isCustom) {
       setEditId(skill.id);
       setEditTitle(skill.name);
-      setEditContent(skill.content || '');
+      const initialContent = skill.content || '';
+      setEditContent(initialContent);
+      setContentHistory([initialContent]);
+      setHistoryIndex(0);
       setIsCreating(true);
       setEditPreview(false);
       return;
@@ -432,7 +553,7 @@ export default function SidePanel() {
   const displayedSkills = activeTab === 'library' ? skills : activeTab === 'created' ? createdSkills : savedSkills;
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-[400px] bg-white dark:bg-black text-neutral-900 dark:text-white font-sans overflow-hidden mx-auto border-r border-l border-neutral-200 dark:border-neutral-800 shadow-sm">
+    <div className="flex flex-col h-screen w-full max-w-4xl bg-white dark:bg-black text-neutral-900 dark:text-white font-sans overflow-hidden mx-auto border-r border-l border-neutral-200 dark:border-neutral-800 shadow-sm">
       
       {/* EDITOR VIEW */}
       {isCreating && (
@@ -475,20 +596,39 @@ export default function SidePanel() {
 
           <div className="flex-1 overflow-hidden flex flex-col">
             {!editPreview && (
-              <div className="flex-none flex items-center gap-1 p-2 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-                <button onClick={() => insertFormat('**', '**')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Bold">
-                  <Bold className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => insertFormat('*', '*')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Italic">
-                  <Italic className="w-3.5 h-3.5" />
-                </button>
-                <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800 mx-1"></div>
-                <button onClick={() => insertFormat('```\n', '\n```')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Code Block">
-                  <Code className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => insertFormat('- ')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="List">
-                  <List className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex-none flex items-center justify-between gap-1 p-2 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => insertFormat('**', '**')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Bold">
+                    <Bold className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => insertFormat('*', '*')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Italic">
+                    <Italic className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800 mx-1"></div>
+                  <button onClick={() => insertFormat('```\n', '\n```')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="Code Block">
+                    <Code className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => insertFormat('- ')} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors" title="List">
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={handleUndo} disabled={historyIndex <= 0} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors disabled:opacity-30 cursor-pointer" title={tEditor('undo')}>
+                    <Undo className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={handleRedo} disabled={historyIndex >= contentHistory.length - 1 || historyIndex === -1} className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-neutral-200 dark:bg-neutral-800 rounded transition-colors disabled:opacity-30 cursor-pointer" title={tEditor('redo')}>
+                    <Redo className="w-3.5 h-3.5" />
+                  </button>
+                  {isAIAvailable && (
+                    <>
+                      <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800 mx-1"></div>
+                      <button onClick={handleImproveSkill} disabled={isImproving || !editTitle || !editContent} className="px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer border border-transparent hover:border-purple-200 dark:hover:border-purple-800" title={tEditor('improveWithAI')}>
+                        {isImproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                        <span className="text-[10px] font-semibold">{tEditor('improveWithAI')}</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
             
@@ -502,7 +642,7 @@ export default function SidePanel() {
                   placeholder="Escribe tu skill en Markdown..."
                 />
               ) : (
-                <div className="prose dark:prose-invert prose-sm max-w-none p-4 prose-pre:bg-neutral-100 dark:prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-200 dark:prose-pre:border-neutral-800 prose-code:bg-neutral-100 dark:prose-code:bg-neutral-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-primary-dark dark:prose-a:text-primary">
+                <div className="prose dark:prose-invert prose-sm max-w-none p-4 prose-pre:bg-neutral-100 prose-pre:text-neutral-900 dark:prose-pre:bg-neutral-900 dark:prose-pre:text-neutral-100 prose-pre:border prose-pre:border-neutral-200 dark:prose-pre:border-neutral-800 prose-code:bg-neutral-100 prose-code:text-neutral-900 dark:prose-code:bg-neutral-900 dark:prose-code:text-neutral-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-primary-dark dark:prose-a:text-primary">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {editContent || '*No content*'}
                   </ReactMarkdown>
@@ -567,7 +707,7 @@ export default function SidePanel() {
                 <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
               </div>
             ) : (
-              <div className="prose dark:prose-invert prose-sm max-w-none prose-pre:bg-neutral-100 dark:prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-200 dark:prose-pre:border-neutral-800 prose-code:bg-neutral-100 dark:prose-code:bg-neutral-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-primary-dark dark:prose-a:text-primary">
+              <div className="prose dark:prose-invert prose-sm max-w-none prose-pre:bg-neutral-100 prose-pre:text-neutral-900 dark:prose-pre:bg-neutral-900 dark:prose-pre:text-neutral-100 prose-pre:border prose-pre:border-neutral-200 dark:prose-pre:border-neutral-800 prose-code:bg-neutral-100 prose-code:text-neutral-900 dark:prose-code:bg-neutral-900 dark:prose-code:text-neutral-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-primary-dark dark:prose-a:text-primary">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {selectedSkill?.isCustom ? selectedSkill.content || '' : skillMarkdown || ''}
                 </ReactMarkdown>
